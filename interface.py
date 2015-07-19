@@ -404,11 +404,102 @@ def review(goals, user_data):
   time_delta = now_date_time - datetime.datetime(now_date_time.year, now_date_time.month, now_date_time.day, 0, 0, 0)
   extra_time = 60 * 60 * 2
   start_time = (NOW - decimal.Decimal(str(time_delta.total_seconds()))) - (days_ago * one_day_in_seconds)
-  recent_entries = get_entries_since(goals, start_time - extra_time)
+  recent_entries = get_multi_entries_since(goals, start_time - extra_time)
   end_time = start_time + one_day_in_seconds + extra_time
   for entry in recent_entries:
     if entry.end_time < end_time:
       print str(entry)
+
+def summarize(goals, user_data, for_tags = False):
+  """
+  Review everything accomplished in given time period, aggregated by tag and description
+  Expected user input: /sum <start_days> <end_days> (or /sumtag)
+  """
+  # returns total time spent in time period on each tag
+  def get_entries_by_tag(entries, start_time, end_time):
+    entries_by_tag = {}
+    # splits entries in chronological order by tag
+    for entry in entries:
+      tag = entry.goal.tags[0]
+      if tag in entries_by_tag.keys():
+        entries_by_tag[tag].append(entry)
+      else:
+        entries_by_tag[tag] = [entry]
+    return entries_by_tag
+
+  # returns total tiem spent in time period on each task type
+  def get_entries_by_description(entries, start_time, end_time):
+    entries_by_description = {}
+    for entry in entries:
+      description = entry.goal.description
+      if description in entries_by_description.keys():
+        entries_by_description[description].append(entry)
+      else:
+        entries_by_description[description] = [entry]
+    return entries_by_description
+
+  def get_duration_for_entries(entries):
+    total_duration = 0
+    for entry in entries:
+      total_duration += entry.duration
+    return total_duration
+
+  def get_labels_sorted_by_duration(label_dict):
+    labels = list(label_dict.keys())
+    labels.sort(key=lambda label: get_duration_for_entries(label_dict[label]),
+      reverse=True)
+    return labels
+
+  def get_human_readable_duration(duration):
+    hours = int(duration / (60*60))
+    minutes = int((duration/60) - (hours*60))
+    return "%.2d h %.2d min" % (hours, minutes)
+
+  def print_effort(tagged_entries, start_time, end_time, pad_spaces=25):
+    total_duration = end_time - start_time
+    print "%s : %s" % (pad("Total", pad_spaces), get_human_readable_duration(total_duration))
+    print "-" * (pad_spaces+21)
+    for tag in get_labels_sorted_by_duration(tagged_entries):
+      total_tag_duration = get_duration_for_entries(tagged_entries[tag])
+      print "%s - %s - %0d %%" % (pad(tag, pad_spaces), 
+        get_human_readable_duration(total_tag_duration), 
+        round(100*total_tag_duration/total_duration))
+    print "-" * (pad_spaces+21)
+    for tag in get_labels_sorted_by_duration(tagged_entries):
+      total_tag_duration = get_duration_for_entries(tagged_entries[tag])
+      print "-" * (pad_spaces+21)
+      print "- %s - %s - %0d %%" % (pad(tag, pad_spaces-2), 
+        get_human_readable_duration(total_tag_duration), 
+        round(100*total_tag_duration/total_duration)) 
+      print "-" * (pad_spaces+21)
+      for entry in tagged_entries[tag]:
+        print str(entry)
+
+  """Start summarize function"""
+  days_ago_start = 0
+  days_ago_end = -1
+  try:
+    day_range = user_data.split(" ")
+    days_ago_start = int(day_range[0])
+    days_ago_end = days_ago_start-1
+    if len(day_range) > 1:
+      days_ago_end = int(day_range[1])
+  except ValueError:
+    pass
+  now_date_time = datetime.datetime.fromtimestamp(NOW)
+  delta_to_day_start = now_date_time - datetime.datetime(now_date_time.year, now_date_time.month, now_date_time.day, 0, 0, 0)
+  start_extra_pad = 60*60 # pad start time by 1 hour to catch sleep
+  start_time = (NOW - decimal.Decimal(str(delta_to_day_start.total_seconds()))) - (days_ago_start * one_day_in_seconds) - start_extra_pad
+  end_time = (NOW - decimal.Decimal(str(delta_to_day_start.total_seconds()))) - (days_ago_end * one_day_in_seconds)
+  recent_entries = get_entries_in_period(goals, start_time, end_time)
+  tagged_entries = get_entries_by_tag(recent_entries, start_time, end_time)
+  desc_entries = get_entries_by_description(recent_entries, start_time, end_time)
+
+  if for_tags:
+    print_effort(tagged_entries, start_time, end_time, pad_spaces=10)
+  else:
+    print_effort(desc_entries, start_time, end_time, pad_spaces=25)
+
   
 def fancy_tri_column_print(a, b, c, col_width, spacing):
   longest_column = max(len(a), len(b), len(c))
@@ -452,6 +543,11 @@ def get_optimal_goals(goals, limit):
   goals.sort(key=lambda goal: goal.value_rate)
   goals.reverse()
   return goals[:limit]
+
+def pad(data, maxLen):
+      if len(data) < maxLen:
+        return data + " " * (maxLen - len(data))
+      return data[:maxLen]
   
 class Entry():
   def __init__(self, progress_data, goal):
@@ -468,6 +564,15 @@ class Entry():
     self.duration = self.end_time - self.start_time
     self.goal = goal
 
+  def __str__(self):
+    formatted_starttime = datetime.datetime.fromtimestamp(self.start_time).strftime("%m-%d %H:%M")
+    formatted_endtime = datetime.datetime.fromtimestamp(self.end_time).strftime("%H:%M")
+    hours = int(self.duration / (60*60))
+    minutes = int((self.duration/60) - (hours*60))
+    tag_set = set(self.goal.tags)
+    tag_string = pad("|".join(tag_set), 10)
+    return "[%s] %s to %s (for %.2d:%.2d) %s" % (tag_string, formatted_starttime, formatted_endtime, hours, minutes, self.goal.description)  + ': ' + self.notes
+
 class MultiEntry():
   def __init__(self, entry):
     self.entries = [entry]
@@ -483,7 +588,7 @@ class MultiEntry():
 
   @property
   def notes(self):
-    return '|'.join([entry.notes for entry in self. entries])
+    return '|'.join([entry.notes for entry in self.entries])
     
   def get_goal_amount_pairs(self):
     goal_amount_pairs = []
@@ -496,7 +601,8 @@ class MultiEntry():
       if len(data) < maxLen:
         return data + " " * (maxLen - len(data))
       return data[:maxLen]
-    formatted_time = datetime.datetime.fromtimestamp(self.start_time).strftime("%m-%d %H:%M")
+    formatted_starttime = datetime.datetime.fromtimestamp(self.start_time).strftime("%m-%d %H:%M")
+    formatted_endtime = datetime.datetime.fromtimestamp(self.end_time).strftime("%H:%M")
     hours = int(self.duration / (60*60))
     minutes = int((self.duration/60) - (hours*60))
     tag_set = set()
@@ -504,9 +610,9 @@ class MultiEntry():
       tag_set = tag_set.union(set(entry.goal.tags))
     tag_string = pad("|".join(tag_set), 10)
     descriptions = " and ".join([entry.goal.description[:40] for entry in self.entries])
-    return "[%s] %s: (for %.2d:%.2d) %s" % (tag_string, formatted_time, hours, minutes, descriptions)  + ': ' + entry.notes
+    return "[%s] %s to %s (for %.2d:%.2d) %s" % (tag_string, formatted_starttime, formatted_endtime, hours, minutes, descriptions)  + ': ' + entry.notes
     
-def get_entries_since(goals, start_time):
+def get_multi_entries_since(goals, start_time):
   recent_goals = []
   for goal in goals:
     if goal.last_updated_at == None:
@@ -531,6 +637,22 @@ def get_entries_since(goals, start_time):
     else:
       final_entries.append(MultiEntry(entry))
   return final_entries
+
+def get_entries_in_period(goals, start_time, end_time):
+  recent_goals = []
+  for goal in goals:
+    if goal.last_updated_at == None:
+      continue
+    if goal.last_updated_at > start_time:
+      recent_goals.append(goal)
+  entries = []
+  for goal in recent_goals:
+    for entry in goal.progress:
+      entry_object = Entry(entry, goal)
+      if entry_object.start_time >= start_time and entry_object.end_time <= end_time:
+        entries.append(entry_object)
+  entries.sort(key=lambda x: x.start_time)
+  return entries
   
 def display_record(entries):
   print "\n".join([str(entry) for entry in entries]) + "\n" 
@@ -549,7 +671,7 @@ def main():
   goals = goal_dict.values()
   #figure out and display the most recent
   all_recent_goals = get_most_recent_goals(goals, NUM_TO_SHOW)
-  recent_entries = get_entries_since(all_recent_goals, NOW - one_week_in_seconds)
+  recent_entries = get_multi_entries_since(all_recent_goals, NOW - one_week_in_seconds)
   display_record(recent_entries[-1*NUM_TO_SHOW:])
   if len(recent_entries) > 0:
     prev_entry = recent_entries[-1]
@@ -580,12 +702,16 @@ def main():
         edit(user_data, goal_dict)
       elif command == "/review":
         review(goals, user_data)
+      elif command == "/sum":
+        summarize(goals, user_data)
+      elif command == "/sumtag":
+        summarize(goals, user_data, for_tags = True)
       return
   #handle the default case (add_time)
   add_time(user_data, goal_dict, prev_entry)
   #then redisplay recent tasks, because it's nice to see  :)
   all_recent_goals = get_most_recent_goals(goals, NUM_TO_SHOW)
-  recent_entries = get_entries_since(all_recent_goals, NOW - one_day_in_seconds)
+  recent_entries = get_multi_entries_since(all_recent_goals, NOW - one_day_in_seconds)
   display_record(recent_entries[-10:])
   #finally, prompt for any input so that the window doesnt close instantly
   raw_input()
