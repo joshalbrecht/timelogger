@@ -408,7 +408,8 @@ def review(goals, user_data):
   end_time = start_time + one_day_in_seconds + extra_time
   for entry in recent_entries:
     if entry.end_time < end_time:
-      print str(entry)
+      segments = int(round((entry.end_time - entry.start_time) / decimal.Decimal(60.0 * 10.0)))
+      print str(entry) + '\n||'*segments
 
 def summarize(goals, user_data, for_tags = False):
   """
