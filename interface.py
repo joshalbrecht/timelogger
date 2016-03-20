@@ -505,7 +505,7 @@ def summarize(goals, user_data, for_tags = False):
 def fancy_tri_column_print(a, b, c, col_width, spacing):
   longest_column = max(len(a), len(b), len(c))
   rowStr = ""
-  for title in ("Optimal", "Frequent", "Recent"):
+  for title in ("Alphabetical", "Frequent", "Recent"):
     rowStr += title + " "*(col_width-len(title))
     rowStr += " " * spacing
   print(rowStr.strip())
