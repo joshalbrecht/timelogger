@@ -509,10 +509,10 @@ def fancy_tri_column_print(a, b, c, col_width, spacing):
     rowStr += title + " "*(col_width-len(title))
     rowStr += " " * spacing
   print(rowStr.strip())
+  a = sorted(a, key=lambda goal: goal.description.lower())
   for i in range(0, longest_column):
     rowStr = ""
     for col in (a,b,c):
-      col = sorted(col, key=lambda goal: goal.description)
       if len(col) > i:
         goal = col[i]
         header = str(goal.id) + ". "
