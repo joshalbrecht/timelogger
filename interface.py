@@ -338,7 +338,7 @@ def add_time(user_data, goal_dict, prev_entry):
   user_data = user_data.strip()
   is_complete = False
   if prev_entry == None:
-    last_recorded_time = decimal.Decimal("1339427450.91")
+    last_recorded_time = decimal.Decimal(str(time.time()))
   else:
     last_recorded_time = prev_entry.end_time
   goal_amount_pairs = []
@@ -735,6 +735,7 @@ def main():
   all_recent_goals = get_most_recent_goals(goals, NUM_TO_SHOW)
   recent_entries = get_multi_entries_since(all_recent_goals, NOW - one_week_in_seconds)
   display_record(recent_entries[-1*NUM_TO_SHOW:])
+  prev_entry = None
   if len(recent_entries) > 0:
     prev_entry = recent_entries[-1]
   #use tags to more sensibly display the most recent tasks, most frequent tasks, and highest value tasks
