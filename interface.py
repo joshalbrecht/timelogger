@@ -411,6 +411,47 @@ def review(goals, user_data):
       segments = int(round((entry.end_time - entry.start_time) / decimal.Decimal(60.0 * 10.0)))
       print str(entry) + '\n||'*segments
 
+def simple_review(goals, user_data):
+  """Review everything accomplished today. Prints in format for summarization into daily log"""
+  max_days_ago = 0
+  try:
+    max_days_ago = int(user_data)
+  except ValueError:
+    pass
+  days_ago_list = list(range(0, max_days_ago+1))
+  for days_ago in days_ago_list:
+    now_date_time = datetime.datetime.fromtimestamp(NOW)
+    time_delta = now_date_time - datetime.datetime(now_date_time.year, now_date_time.month, now_date_time.day, 0, 0, 0)
+    extra_time = 60 * 60 * 2
+    start_time = (NOW - decimal.Decimal(str(time_delta.total_seconds()))) - (days_ago * one_day_in_seconds)
+    recent_entries = get_multi_entries_since(goals, start_time - extra_time)
+    end_time = start_time + one_day_in_seconds + extra_time
+    interesting_activities = {}
+    found_sleep = False
+    for entry in recent_entries:
+      if entry.end_time < end_time:
+        description = entry.description
+        if 'sleep' in entry.description:
+          found_sleep = True
+          continue
+        if not found_sleep:
+          continue
+        if "upkeep" in entry.tags:
+          description = 'upkeep'
+        if entry.description == 'clean':
+          description = 'upkeep'
+        if description not in interesting_activities:
+          interesting_activities[description] = []
+        interesting_activities[description].append(entry)
+    sorted_keys = reversed(sorted(interesting_activities.keys(), key=lambda k: sum([x.duration for x in interesting_activities[k]])))
+    then_date = datetime.datetime.fromtimestamp(start_time + extra_time)
+    print("\n%s/%s/%s\n" % (then_date.month, then_date.day, then_date.year))
+    for key in sorted_keys:
+      value = interesting_activities[key]
+      total_time = int(sum([x.duration for x in value]) / decimal.Decimal(60.0))
+      print("%s (%s): %s" % (key, total_time, '. '.join([x.notes for x in value if x.notes])))
+
+
 def summarize(goals, user_data, for_tags = False):
   """
   Review everything accomplished in given time period, aggregated by tag and description
@@ -566,6 +607,14 @@ class Entry():
     self.duration = self.end_time - self.start_time
     self.goal = goal
 
+  @property
+  def description(self):
+    return self.goal.description
+
+  @property
+  def tags(self):
+    return self.goal.tags
+
   def __str__(self):
     formatted_starttime = datetime.datetime.fromtimestamp(self.start_time).strftime("%m-%d %H:%M")
     formatted_endtime = datetime.datetime.fromtimestamp(self.end_time).strftime("%H:%M")
@@ -587,6 +636,17 @@ class MultiEntry():
 
   def add(self, entry):
     self.entries.append(entry)
+
+  @property
+  def description(self):
+    return '|'.join([entry.goal.description for entry in self.entries])
+
+  @property
+  def tags(self):
+    tags = []
+    for entry in self.entries:
+      tags += entry.goal.tags
+    return tags
 
   @property
   def notes(self):
@@ -704,6 +764,8 @@ def main():
         edit(user_data, goal_dict)
       elif command == "/review":
         review(goals, user_data)
+      elif command == "/simple":
+        simple_review(goals, user_data)
       elif command == "/sum":
         summarize(goals, user_data)
       elif command == "/sumtag":
