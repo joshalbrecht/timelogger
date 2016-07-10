@@ -443,10 +443,10 @@ def weekly_review(goals, user_data):
   for description in sorted_keys:
     daily_entries = all_activities[description]
     total_time = sum([x[0] for x in daily_entries])
-    useful_notes = '\n'.join([x[1] for x in daily_entries if x[1]])
+    useful_notes = '\n'.join(['        '+x[1] for x in reversed(sorted(daily_entries, key=lambda y: y[0])) if x[1]])
     if useful_notes:
-      useful_notes += '\n'
-    print('%s (%s):\n%s' % (description, round(total_time, 1), useful_notes))
+      useful_notes = '\n'+useful_notes
+    print('%s (%s):%s' % (description, round(total_time, 1), useful_notes))
 
 
 def get_interesting_activities(goals, days_ago):
