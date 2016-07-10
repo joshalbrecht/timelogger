@@ -420,6 +420,36 @@ def simple_review(goals, user_data):
     pass
   days_ago_list = list(range(0, max_days_ago+1))
   for days_ago in days_ago_list:
+    interesting_activities, then_date = get_interesting_activities(goals, days_ago)
+    sorted_keys = reversed(sorted(interesting_activities.keys(), key=lambda k: sum([x.duration for x in interesting_activities[k]])))
+    print("\n%s/%s/%s\n" % (then_date.month, then_date.day, then_date.year))
+    for key in sorted_keys:
+      value = interesting_activities[key]
+      total_time = int(sum([x.duration for x in value]) / decimal.Decimal(60.0))
+      print("%s (%s): %s" % (key, total_time, '. '.join([x.notes for x in value if x.notes])))
+
+def weekly_review(goals, user_data):
+  starting_days_ago = int(user_data)
+  all_activities = {}
+  for days_ago in list(range(min(0, starting_days_ago-7), starting_days_ago)):
+    interesting_activities, then_date = get_interesting_activities(goals, days_ago)
+    print("\n%s/%s/%s\n" % (then_date.month, then_date.day, then_date.year))
+    for description in interesting_activities.keys():
+      if description not in all_activities:
+        all_activities[description] = []
+      value = interesting_activities[description]
+      all_activities[description] = all_activities[description] + [(sum([x.duration for x in value]) / decimal.Decimal(3600.0), '. '.join([x.notes for x in value if x.notes]))]
+  sorted_keys = reversed(sorted(all_activities.keys(), key=lambda k: sum([x[0] for x in all_activities[k]])))
+  for description in sorted_keys:
+    daily_entries = all_activities[description]
+    total_time = sum([x[0] for x in daily_entries])
+    useful_notes = '\n'.join([x[1] for x in daily_entries if x[1]])
+    if useful_notes:
+      useful_notes += '\n'
+    print('%s (%s):\n%s' % (description, round(total_time, 1), useful_notes))
+
+
+def get_interesting_activities(goals, days_ago):
     now_date_time = datetime.datetime.fromtimestamp(NOW)
     time_delta = now_date_time - datetime.datetime(now_date_time.year, now_date_time.month, now_date_time.day, 0, 0, 0)
     extra_time = 60 * 60 * 2
@@ -443,14 +473,8 @@ def simple_review(goals, user_data):
         if description not in interesting_activities:
           interesting_activities[description] = []
         interesting_activities[description].append(entry)
-    sorted_keys = reversed(sorted(interesting_activities.keys(), key=lambda k: sum([x.duration for x in interesting_activities[k]])))
     then_date = datetime.datetime.fromtimestamp(start_time + extra_time)
-    print("\n%s/%s/%s\n" % (then_date.month, then_date.day, then_date.year))
-    for key in sorted_keys:
-      value = interesting_activities[key]
-      total_time = int(sum([x.duration for x in value]) / decimal.Decimal(60.0))
-      print("%s (%s): %s" % (key, total_time, '. '.join([x.notes for x in value if x.notes])))
-
+    return interesting_activities, then_date
 
 def summarize(goals, user_data, for_tags = False):
   """
@@ -765,6 +789,8 @@ def main():
         review(goals, user_data)
       elif command == "/simple":
         simple_review(goals, user_data)
+      elif command == "/weekly":
+        weekly_review(goals, user_data)
       elif command == "/sum":
         summarize(goals, user_data)
       elif command == "/sumtag":
