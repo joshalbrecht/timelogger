@@ -431,7 +431,7 @@ def simple_review(goals, user_data):
 def weekly_review(goals, user_data):
   starting_days_ago = int(user_data)
   all_activities = {}
-  for days_ago in list(range(min(0, starting_days_ago-7), starting_days_ago)):
+  for days_ago in list(range(max(0, starting_days_ago-7), starting_days_ago)):
     interesting_activities, then_date = get_interesting_activities(goals, days_ago)
     print("\n%s/%s/%s\n" % (then_date.month, then_date.day, then_date.year))
     for description in interesting_activities.keys():
