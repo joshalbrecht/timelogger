@@ -409,7 +409,7 @@ def review(goals, user_data):
   for entry in recent_entries:
     if entry.end_time < end_time:
       segments = int(round((entry.end_time - entry.start_time) / decimal.Decimal(60.0 * 10.0)))
-      print str(entry) + '\n||'*segments
+      print(str(entry) + '\n||'*segments)
 
 def simple_review(goals, user_data):
   """Review everything accomplished today. Prints in format for summarization into daily log"""
@@ -523,23 +523,23 @@ def summarize(goals, user_data, for_tags = False):
 
   def print_effort(tagged_entries, start_time, end_time, pad_spaces=25):
     total_duration = end_time - start_time
-    print "%s : %s" % (pad("Total", pad_spaces), get_human_readable_duration(total_duration))
-    print "-" * (pad_spaces+21)
+    print("%s : %s" % (pad("Total", pad_spaces), get_human_readable_duration(total_duration)))
+    print("-" * (pad_spaces+21))
     for tag in get_labels_sorted_by_duration(tagged_entries):
       total_tag_duration = get_duration_for_entries(tagged_entries[tag])
-      print "%s - %s - %0d %%" % (pad(tag, pad_spaces), 
+      print("%s - %s - %0d %%" % (pad(tag, pad_spaces),
         get_human_readable_duration(total_tag_duration), 
-        round(100*total_tag_duration/total_duration))
-    print "-" * (pad_spaces+21)
+        round(100*total_tag_duration/total_duration)))
+    print("-" * (pad_spaces+21))
     for tag in get_labels_sorted_by_duration(tagged_entries):
       total_tag_duration = get_duration_for_entries(tagged_entries[tag])
-      print "-" * (pad_spaces+21)
-      print "- %s - %s - %0d %%" % (pad(tag, pad_spaces-2), 
+      print("-" * (pad_spaces+21))
+      print("- %s - %s - %0d %%" % (pad(tag, pad_spaces-2),
         get_human_readable_duration(total_tag_duration), 
-        round(100*total_tag_duration/total_duration)) 
-      print "-" * (pad_spaces+21)
+        round(100*total_tag_duration/total_duration)))
+      print("-" * (pad_spaces+21))
       for entry in tagged_entries[tag]:
-        print str(entry)
+        print(str(entry))
 
   """Start summarize function"""
   days_ago_start = 0
@@ -589,8 +589,8 @@ def fancy_tri_column_print(a, b, c, col_width, spacing):
         rowStr += " " * col_width
       if col != c:
         rowStr += " " * spacing
-    print rowStr
-  print ""
+    print(rowStr)
+  print("")
       
 def get_most_recent_goals(goals, limit):
   goals.sort(key=lambda goal: goal.last_updated_at)
@@ -740,7 +740,7 @@ def get_entries_in_period(goals, start_time, end_time):
   return entries
   
 def display_record(entries):
-  print "\n".join([str(entry) for entry in entries]) + "\n" 
+  print("\n".join([str(entry) for entry in entries]) + "\n")
     
 def main():
   NUM_TO_SHOW = 40
