@@ -741,12 +741,31 @@ def get_entries_in_period(goals, start_time, end_time):
   
 def display_record(entries):
   print("\n".join([str(entry) for entry in entries]) + "\n")
-    
+
+def handle_command_line_data(command_data):
+  commands = command_data.split('#')
+  for command in commands:
+    goal_dict = load_all_goals()
+    goals = list(goal_dict.values())
+    all_recent_goals = get_most_recent_goals(goals, NUM_TO_SHOW)
+    recent_entries = get_multi_entries_since(all_recent_goals, NOW - one_week_in_seconds)
+    display_record(recent_entries[-1*NUM_TO_SHOW:])
+    prev_entry = recent_entries[-1]
+    add_time(command, goal_dict, prev_entry)
+    all_recent_goals = get_most_recent_goals(goals, NUM_TO_SHOW)
+    recent_entries = get_multi_entries_since(all_recent_goals, NOW - one_day_in_seconds)
+    display_record(recent_entries[-10:])
+
+NUM_TO_SHOW = 40
+
 def main():
-  NUM_TO_SHOW = 40
   #this should only happen on windows
   if os.name == 'nt':
     os.system("mode con cols=190 lines=60")
+  # big hack to read string from the command line
+  if len(sys.argv) > 0 and sys.argv[1] == '-c':
+    handle_command_line_data(sys.argv[2])
+    return
   #read tags from args
   tags = sys.argv[1:]
   tag_set = set(tags)
