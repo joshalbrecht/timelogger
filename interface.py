@@ -44,7 +44,7 @@ one_week_in_seconds = 14*one_day_in_seconds
 
 def prompt(message):
   print(message)
-  return raw_input()
+  return input()
   
 def read_map(message):
   data = {}
@@ -153,7 +153,7 @@ class Goal:
 
   @staticmethod
   def get_next_id():
-    inFile = open(Goal.ID_FILE, "rb")
+    inFile = open(Goal.ID_FILE, "r")
     nextId = int(inFile.read().strip())
     inFile.close()
     return nextId
@@ -162,7 +162,7 @@ class Goal:
   def increment_next_id():
     nextId = Goal.get_next_id()
     nextId += 1
-    outFile = open(Goal.ID_FILE, "wb")
+    outFile = open(Goal.ID_FILE, "w")
     outFile.write(str(nextId))
     outFile.close()
   
@@ -187,7 +187,7 @@ class Goal:
   @staticmethod
   def load_from_file(file_name):
     #file_name = Goal.file_name_from_id(file_id)
-    in_file = open(file_name, "rb")
+    in_file = open(file_name, "r")
     data = in_file.read()
     in_file.close()
     goal = Goal()
@@ -241,7 +241,7 @@ class Goal:
     self.thoughts = ""
     data = thoughts+"\n"+Goal.THOUGHT_SEPARATOR+"\n"+json.dumps(self.__dict__, default=_serializer, sort_keys=True, indent=2)
     self.thoughts = thoughts
-    outFile = open(Goal.file_name_from_id(self.id), 'wb')
+    outFile = open(Goal.file_name_from_id(self.id), 'w')
     outFile.write(data)
     outFile.close()
     
@@ -297,7 +297,7 @@ class Goal:
   @property
   def last_updated_at(self):
     if len(self.progress) <= 0:
-      return None
+      return self.created_at
     else:
       return self.progress[-1][1]
     
@@ -772,7 +772,7 @@ def main():
   print(" ".join(tag_set) + "\n=======================================")
   #load all goals
   goal_dict = load_all_goals()
-  goals = goal_dict.values()
+  goals = list(goal_dict.values())
   #figure out and display the most recent
   all_recent_goals = get_most_recent_goals(goals, NUM_TO_SHOW)
   recent_entries = get_multi_entries_since(all_recent_goals, NOW - one_week_in_seconds)
@@ -822,7 +822,7 @@ def main():
   recent_entries = get_multi_entries_since(all_recent_goals, NOW - one_day_in_seconds)
   display_record(recent_entries[-10:])
   #finally, prompt for any input so that the window doesnt close instantly
-  raw_input()
+  input()
     
 if __name__ == "__main__":
   main()
