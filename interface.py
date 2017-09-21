@@ -429,9 +429,15 @@ def simple_review(goals, user_data):
       print("%s (%s): %s" % (key, total_time, '. '.join([x.notes for x in value if x.notes])))
 
 def weekly_review(goals, user_data):
-  starting_days_ago = int(user_data)
+  if ' ' in user_data:
+    starting_days_ago, time_span = user_data.split(' ')
+    starting_days_ago = int(starting_days_ago)
+    time_span = int(time_span)
+  else:
+    starting_days_ago = int(user_data)
+    time_span = 7
   all_activities = {}
-  for days_ago in list(range(max(0, starting_days_ago-7), starting_days_ago)):
+  for days_ago in list(range(max(0, starting_days_ago-time_span), starting_days_ago)):
     interesting_activities, then_date = get_interesting_activities(goals, days_ago)
     print("\n%s/%s/%s\n" % (then_date.month, then_date.day, then_date.year))
     for description in interesting_activities.keys():
