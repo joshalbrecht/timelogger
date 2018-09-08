@@ -473,7 +473,12 @@ def get_interesting_activities(goals, days_ago):
         if not found_sleep:
           continue
         if "upkeep" in entry.tags:
-          description = 'upkeep'
+          if description in ('make food', 'shower', 'eat', 'vacation', 'playing games'):
+            pass
+          elif description in ('travel', 'driving', 'getting ready'):
+            description = 'travel'
+          else:
+            description = 'upkeep'
         if entry.description == 'clean':
           description = 'upkeep'
         if description not in interesting_activities:
